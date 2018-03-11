@@ -1,0 +1,9 @@
+v 4
+file . "lfsr_tb.vhd" "77cad49bc3fbbff79e80e075b5525284443fb3f9" "20180321090053.931":
+  entity lfsr_tb at 1( 0) + 0 on 35;
+  architecture complex of lfsr_tb at 11( 189) + 0 on 36;
+file . "lfsr.vhd" "032de92396dadeef4c9583f8e693cefe868a8132" "20180321090053.878":
+  entity lfsr at 1( 0) + 0 on 31;
+  architecture first of lfsr at 16( 336) + 0 on 32;
+  architecture second of lfsr at 33( 702) + 0 on 33;
+  architecture third of lfsr at 50( 1050) + 0 on 34;
