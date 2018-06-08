@@ -59,7 +59,6 @@ def get_client_serial_number(environ):
 
 def generateG():
     global modulo, g
-    request.acc
     temp_modulo = generate_big_prime(G_LENGTH)
     while not is_germain_prime(temp_modulo):
         temp_modulo = generate_big_prime(G_LENGTH)
@@ -101,8 +100,8 @@ def accept_group():
         return Response(status=403)
     print("Group accepted by: {}".format(client_serial))
     if client_serial not in clientsThatAcceptedGroup:
-        clientsThatAcceptedGroup.push(client_serial)
-    print("Accepted clients: {}".format(signedClients))
+        clientsThatAcceptedGroup.append(client_serial)
+    print("Accepted clients: {}".format(clientsThatAcceptedGroup))
     return "Accepted"
 #
 #
@@ -114,7 +113,7 @@ def accept_group():
 
 @app.route("/send-key",  methods=["POST"])
 def send_key():
-    global signedClients, clientsThatAcceptedGroup, keys
+    global signedClients, clientsThatAcceptedGroup, keys, modulo, g
     client_serial = get_client_serial_number(request.environ)
     if client_serial not in signedClients:
         return Response(status=403)
@@ -122,7 +121,10 @@ def send_key():
         return Response(status=503)
     client_id = signedClients.index(client_serial)
     if keys[client_id] is None:
-        keys[client_id] = request.form['key']
+        l_trail = (int(request.form['gr']) * int(request.form['key'])) % modulo
+        r_trail = int(g ** int(request.form['xr'])) % modulo
+        if l_trail == r_trail:
+            keys[client_id] = request.form['key']
     print("Got key: {} for: {}".format(keys[client_id], client_serial))
     return "Got key"
 
@@ -156,7 +158,10 @@ def send_second_key():
 
     client_id = signedClients.index(client_serial)
     if secondKeys[client_id] is None:
-        secondKeys[client_id] = request.form['second_key']
+        l_trail = (int(request.form['gr']) * int(request.form['key'])) % modulo
+        r_trail = int(g ** int(request.form['xr'])) % modulo
+        if l_trail == r_trail:
+            secondKeys[client_id] = request.form['second_key']
     print("Got second key: {} for: {}".format(secondKeys[client_id], client_serial))
     return "Got key"
 
@@ -192,5 +197,5 @@ if __name__ == "__main__":
     context.verify_mode = ssl.CERT_REQUIRED
     context.load_verify_locations("certs/ca/rootCA.crt")
     context.load_cert_chain("certs/server.crt", "certs/server.key")
-    serving.run_simple("steelforge.pl", 443, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
-    # serving.run_simple("127.0.0.1", 8000, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
+    # serving.run_simple("steelforge.pl", 443, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
+    serving.run_simple("127.0.0.1", 8000, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
