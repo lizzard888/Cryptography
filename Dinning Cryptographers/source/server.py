@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, Response
 from werkzeug import serving
 import ssl
 import OpenSSL
-from random import randint
+from random import randint, seed
 
 app = Flask(__name__)
 
@@ -193,6 +193,7 @@ def clear():
 
 
 if __name__ == "__main__":
+    seed()
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     context.verify_mode = ssl.CERT_REQUIRED
     context.load_verify_locations("certs/ca/rootCA.crt")
