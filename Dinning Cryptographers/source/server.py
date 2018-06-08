@@ -16,7 +16,8 @@ modulo = None
 g = None
 
 clientsThatAcceptedGroup = []
-
+keys = []
+secondKeys = []
 
 class PeerCertWSGIRequestHandler(serving.WSGIRequestHandler):
 
@@ -58,6 +59,7 @@ def get_client_serial_number(environ):
 
 def generateG():
     global modulo, g
+    request.acc
     temp_modulo = generate_big_prime(G_LENGTH)
     while not is_germain_prime(temp_modulo):
         temp_modulo = generate_big_prime(G_LENGTH)
@@ -66,7 +68,7 @@ def generateG():
     print("Generated g: {}, modulus: {}".format(g, modulo))
 
 
-@app.route("/sign-in")
+@app.route("/sign-in", methods=["GET", "POST"])
 def sign_in():
     global signedClients
     client_serial = get_client_serial_number(request.environ)
@@ -76,10 +78,10 @@ def sign_in():
     print("Signed clients: {}".format(signedClients))
     if len(signedClients) == NUMBER_OF_CLIENTS:
         generateG()
-    return jsonify({"id": signedClients.index(client_serial)})
+    return jsonify({"id": signedClients.index(client_serial), "no_of_clients": NUMBER_OF_CLIENTS})
 
 
-@app.route("/get-group")
+@app.route("/get-group",  methods=["GET", "POST"])
 def get_group():
     global g, modulo, signedClients
     client_serial = get_client_serial_number(request.environ)
@@ -91,7 +93,7 @@ def get_group():
     return jsonify({"g": str(g), "modulo": str(modulo)})
 
 
-@app.route("/accept-group")
+@app.route("/accept-group",  methods=["GET", "POST"])
 def accept_group():
     global signedClients, clientsThatAcceptedGroup
     client_serial = get_client_serial_number(request.environ)
@@ -102,36 +104,87 @@ def accept_group():
         clientsThatAcceptedGroup.push(client_serial)
     print("Accepted clients: {}".format(signedClients))
     return "Accepted"
+#
+#
+# @app.route("/deny-group",  methods=["GET", "POST"])
+# def deny_group():
+#     print("Group denied!")
+#     return "Denied"
 
 
-@app.route("/deny-group")
-def deny_group():
-    print("Group denied!")
-    return "Denied"
-
-
-@app.route("/send-key")
+@app.route("/send-key",  methods=["POST"])
 def send_key():
-    print("Got key for: ")
+    global signedClients, clientsThatAcceptedGroup, keys
+    client_serial = get_client_serial_number(request.environ)
+    if client_serial not in signedClients:
+        return Response(status=403)
+    if len(clientsThatAcceptedGroup) < NUMBER_OF_CLIENTS:
+        return Response(status=503)
+    client_id = signedClients.index(client_serial)
+    if keys[client_id] is None:
+        keys[client_id] = request.form['key']
+    print("Got key: {} for: {}".format(keys[client_id], client_serial))
     return "Got key"
 
 
-@app.route("/get-keys")
+@app.route("/get-keys",  methods=["GET", "POST"])
 def get_keys():
-    print("Sending all keys: ")
-    return "Keys"
+    global signedClients, clientsThatAcceptedGroup, keys
+    client_serial = get_client_serial_number(request.environ)
+    if client_serial not in signedClients:
+        return Response(status=403)
+    if len(keys) < NUMBER_OF_CLIENTS:
+        return Response(status=503)
+    for key in keys:
+        if key is None:
+            return Response(status=503)
+    print("Sending all keys to: {}".format(client_serial))
+    return jsonify({"keys": keys})
 
 
-@app.route("/send-second-key")
+@app.route("/send-second-key",  methods=["POST"])
 def send_second_key():
-    print("Got second key")
-    return "Thank you"
+    global signedClients, clientsThatAcceptedGroup, keys, secondKeys
+    client_serial = get_client_serial_number(request.environ)
+    if client_serial not in signedClients:
+        return Response(status=403)
+    if len(keys) < NUMBER_OF_CLIENTS:
+        return Response(status=503)
+    for key in keys:
+        if key is None:
+            return Response(status=503)
+
+    client_id = signedClients.index(client_serial)
+    if secondKeys[client_id] is None:
+        secondKeys[client_id] = request.form['second_key']
+    print("Got second key: {} for: {}".format(secondKeys[client_id], client_serial))
+    return "Got key"
 
 
-@app.route("/get-second-keys")
+@app.route("/get-second-keys",  methods=["GET", "POST"])
 def get_second_keys():
-    print("Sending all second keys: ")
-    return "Keys"
+    global signedClients, clientsThatAcceptedGroup, secondKeys
+    client_serial = get_client_serial_number(request.environ)
+    if client_serial not in signedClients:
+        return Response(status=403)
+    if len(secondKeys) < NUMBER_OF_CLIENTS:
+        return Response(status=503)
+    for key in secondKeys:
+        if key is None:
+            return Response(status=503)
+    print("Sending all second keys to: {}".format(client_serial))
+    return jsonify({"second_keys": secondKeys})
+
+
+@app.route("/clear")
+def clear():
+    global signedClients, clientsThatAcceptedGroup, secondKeys, keys, g, modulo
+    signedClients = []
+    clientsThatAcceptedGroup = []
+    keys = []
+    secondKeys = []
+    g = None
+    modulo = None
 
 
 if __name__ == "__main__":
