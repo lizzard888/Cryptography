@@ -125,6 +125,8 @@ def send_key():
         r_trail = int(g ** int(request.form['xr'])) % modulo
         if l_trail == r_trail:
             keys[client_id] = request.form['key']
+        else:
+            return Response(status=504)
     print("Got key: {} for: {}".format(keys[client_id], client_serial))
     return "Got key"
 
@@ -162,6 +164,8 @@ def send_second_key():
         r_trail = int(g ** int(request.form['xr'])) % modulo
         if l_trail == r_trail:
             secondKeys[client_id] = request.form['second_key']
+        else:
+            return Response(status=504)
     print("Got second key: {} for: {}".format(secondKeys[client_id], client_serial))
     return "Got key"
 
@@ -198,5 +202,5 @@ if __name__ == "__main__":
     context.verify_mode = ssl.CERT_REQUIRED
     context.load_verify_locations("certs/ca/rootCA.crt")
     context.load_cert_chain("certs/server.crt", "certs/server.key")
-    # serving.run_simple("steelforge.pl", 443, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
-    serving.run_simple("127.0.0.1", 8000, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
+    serving.run_simple("steelforge.pl", 443, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
+    # serving.run_simple("127.0.0.1", 8000, app, ssl_context=context, request_handler=PeerCertWSGIRequestHandler)
