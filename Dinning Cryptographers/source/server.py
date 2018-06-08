@@ -114,6 +114,8 @@ def accept_group():
 @app.route("/send-key",  methods=["POST"])
 def send_key():
     global signedClients, clientsThatAcceptedGroup, keys, modulo, g
+    if not keys:
+        keys = [None for _ in range(0, NUMBER_OF_CLIENTS)]
     client_serial = get_client_serial_number(request.environ)
     if client_serial not in signedClients:
         return Response(status=403)
@@ -121,10 +123,11 @@ def send_key():
         return Response(status=503)
     client_id = signedClients.index(client_serial)
     if keys[client_id] is None:
-        l_trail = (int(request.form['gr']) * int(request.form['key'])) % modulo
-        r_trail = int(g ** int(request.form['xr'])) % modulo
+        json = request.get_json()
+        l_trail = (int(json['gr']) * int(json['key'])) % modulo
+        r_trail = pow(g, int(json['xr']), modulo)
         if l_trail == r_trail:
-            keys[client_id] = request.form['key']
+            keys[client_id] = int(json['key'])
         else:
             return Response(status=504)
     print("Got key: {} for: {}".format(keys[client_id], client_serial))
@@ -149,6 +152,8 @@ def get_keys():
 @app.route("/send-second-key",  methods=["POST"])
 def send_second_key():
     global signedClients, clientsThatAcceptedGroup, keys, secondKeys
+    if not secondKeys:
+        secondKeys = [None for _ in range(0, NUMBER_OF_CLIENTS)]
     client_serial = get_client_serial_number(request.environ)
     if client_serial not in signedClients:
         return Response(status=403)
@@ -159,11 +164,12 @@ def send_second_key():
             return Response(status=503)
 
     client_id = signedClients.index(client_serial)
-    if secondKeys[client_id] is None:
-        l_trail = (int(request.form['gr']) * int(request.form['key'])) % modulo
-        r_trail = int(g ** int(request.form['xr'])) % modulo
+    if len(secondKeys) <= client_id or secondKeys[client_id] is None:
+        json = request.get_json()
+        l_trail = (int(json['gr']) * int(json['key'])) % modulo
+        r_trail = int(g ** int(json['xr'])) % modulo
         if l_trail == r_trail:
-            secondKeys[client_id] = request.form['second_key']
+            secondKeys[client_id] = int(json['second_key'])
         else:
             return Response(status=504)
     print("Got second key: {} for: {}".format(secondKeys[client_id], client_serial))
@@ -194,6 +200,7 @@ def clear():
     secondKeys = []
     g = None
     modulo = None
+    return "Cleared"
 
 
 if __name__ == "__main__":
