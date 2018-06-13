@@ -151,7 +151,7 @@ def get_keys():
 
 @app.route("/send-second-key",  methods=["POST"])
 def send_second_key():
-    global signedClients, clientsThatAcceptedGroup, keys, secondKeys
+    global signedClients, clientsThatAcceptedGroup, keys, secondKeys, modulo
     if not secondKeys:
         secondKeys = [None for _ in range(0, NUMBER_OF_CLIENTS)]
     client_serial = get_client_serial_number(request.environ)
@@ -164,12 +164,12 @@ def send_second_key():
             return Response(status=503)
 
     client_id = signedClients.index(client_serial)
-    if len(secondKeys) <= client_id or secondKeys[client_id] is None:
+    if secondKeys[client_id] is None:
         json = request.get_json()
-        l_trail = (int(json['gr']) * int(json['key'])) % modulo
-        r_trail = int(g ** int(json['xr'])) % modulo
+        l_trail = (int(json['gry']) * int(json['key'])) % modulo
+        r_trail = pow(int(json['gy']), int(json['cr']), modulo)
         if l_trail == r_trail:
-            secondKeys[client_id] = int(json['second_key'])
+            secondKeys[client_id] = json['key']
         else:
             return Response(status=504)
     print("Got second key: {} for: {}".format(secondKeys[client_id], client_serial))
